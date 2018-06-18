@@ -15,7 +15,24 @@
   "objects": [
     {
       "apiVersion": "v1",
-      "kind": "ReplicationController",
+      "kind": "PersistentVolumeClaim",
+      "metadata": {
+        "name": "hazelcast-volume"
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteMany"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "1Gi"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "apps/v1beta1",
+      "kind": "StatefulSet",
       "metadata": {
         "generateName": "hazelcast-enterprise-cluster-rc-${DEPLOYMENT_NAME}-",
         "name": "hz-rc"
@@ -23,7 +40,9 @@
       "spec": {
         "replicas": "${HAZELCAST_REPLICAS}",
         "selector": {
-          "name": "hazelcast-enterprise-node-${DEPLOYMENT_NAME}"
+          "matchLabels": {
+            "name": "hazelcast-enterprise-node-${DEPLOYMENT_NAME}"
+          }
         },
         "template": {
           "metadata": {
@@ -39,6 +58,12 @@
                 "name": "hazelcast-storage",
                 "configMap": {
                   "name": "hazelcast-configuration"
+                }
+              },
+              {
+                "name": "hazelcast-persistent-storage",
+                "persistentVolumeClaim": {
+                  "claimName": "hazelcast-volume"
                 }
               }
             ],
@@ -58,6 +83,16 @@
                   {
                     "name": "HZ_DATA",
                     "value": "/data/hazelcast"
+                  },
+                  { "name": "POD_NAME",
+                    "valueFrom": {
+                      "fieldRef": {
+                        "fieldPath": "metadata.name"
+                      }
+                    }
+                  },
+                  { "name": "JAVA_OPTS",
+                    "value": "-Dhazelcast.rest.enabled=true -DpodName=$(POD_NAME)"
                   }
                 ],
                 "ports": [
@@ -70,6 +105,10 @@
                   {
                     "mountPath": "/data/hazelcast",
                     "name": "hazelcast-storage"
+                  },
+                  {
+                    "mountPath": "/data/persistent",
+                    "name": "hazelcast-persistent-storage"
                   }
                 ],
                 "livenessProbe": {
