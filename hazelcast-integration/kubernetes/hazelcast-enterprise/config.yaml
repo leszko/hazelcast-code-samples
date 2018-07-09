@@ -1,0 +1,175 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: default-cluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: default
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hazelcast-configuration
+  namespace: default
+data:
+  hazelcast.xml: |-
+      <?xml version="1.0" encoding="UTF-8"?>
+      <hazelcast xsi:schemaLocation="http://www.hazelcast.com/schema/config hazelcast-config-3.10.xsd"
+                     xmlns="http://www.hazelcast.com/schema/config"
+                     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+        <properties>
+          <property name="hazelcast.discovery.enabled">true</property>
+        </properties>
+        <network>
+          <join>
+            <multicast enabled="false"/>
+            <tcp-ip enabled="false" />
+            <discovery-strategies>
+              <discovery-strategy enabled="true" class="com.hazelcast.kubernetes.HazelcastKubernetesDiscoveryStrategy">
+              </discovery-strategy>
+            </discovery-strategies>
+          </join>
+        </network>
+        <management-center enabled="true">http://management-center.default.svc:8080/hazelcast-mancenter</management-center>
+      </hazelcast>
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: hazelcast
+spec:
+  type: ClusterIP
+  selector:
+    app: hazelcast
+  ports:
+  - protocol: TCP
+    port: 5701
+    targetPort: hazelcast
+    name: hzport
+
+---
+
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: hazelcast
+  labels:
+    app: hazelcast
+spec:
+  replicas: 3
+  serviceName: hazelcast
+  template:
+    metadata:
+      labels:
+        app: hazelcast
+    spec:
+      containers:
+      - name: hazelcast
+        image: "hazelcast/hazelcast-enterprise-kubernetes:3.10.2"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: hazelcast
+          containerPort: 5701
+        livenessProbe:
+          httpGet:
+            path: /hazelcast/health/node-state
+            port: 5701
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /hazelcast/health/node-state
+            port: 5701
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 3
+        volumeMounts:
+        - name: hazelcast-storage
+          mountPath: /data/hazelcast
+        env:
+        - name: HZ_DATA
+          value: /data/hazelcast
+        - name: JAVA_OPTS
+          value: "-Dhazelcast.rest.enabled=true"
+        - name: HZ_LICENSE_KEY
+          value: <license_key>
+      volumes:
+      - name: hazelcast-storage
+        configMap:
+          name: hazelcast-configuration
+
+---
+
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: management-center-persistent
+  labels:
+    app: management-center
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: management-center
+spec:
+  type: LoadBalancer
+  selector:
+    app: management-center
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: mancenter
+    name: mcport
+
+---
+
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: management-center
+  labels:
+    app: management-center
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: management-center
+    spec:
+      containers:
+      - name: management-center
+        image: "hazelcast/management-center:3.10.2"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: mancenter
+          containerPort: 8080
+        volumeMounts:
+        - name: management-center-storage
+          mountPath: /data
+      volumes:
+      - name: management-center-storage
+        persistentVolumeClaim:
+          claimName: management-center-persistent
