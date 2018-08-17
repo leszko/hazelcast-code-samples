@@ -2,7 +2,6 @@ package com.hazelcast.ocp.rest;
 
 import com.hazelcast.ocp.command.MapService;
 import com.hazelcast.ocp.entryprocessor.Position;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/maps")
-@Slf4j
 public class MapOperations {
 
     @Autowired

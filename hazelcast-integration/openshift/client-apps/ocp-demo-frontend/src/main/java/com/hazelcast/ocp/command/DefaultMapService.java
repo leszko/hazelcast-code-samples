@@ -4,7 +4,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
 import com.hazelcast.ocp.entryprocessor.DistanceProcessor;
 import com.hazelcast.ocp.entryprocessor.Position;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,7 +13,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 @Service
-@Slf4j
 public class DefaultMapService implements MapService {
 
     private static final String MAP_NAME = "MapService";

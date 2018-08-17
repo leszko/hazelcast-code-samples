@@ -1,14 +1,14 @@
 package com.hazelcast.ocp.rest;
 
-import lombok.extern.slf4j.Slf4j;
+import org.apache.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ControllerAdvice
-@Slf4j
 public class MapOperationsAdvice {
+    private static final Logger log = Logger.getLogger(MapOperations.class);
 
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(value = {IllegalStateException.class})
