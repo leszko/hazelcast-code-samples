@@ -1,4 +1,4 @@
-package com.hazelcast.aws.ecs;
+package com.hazelcast.kubernetes;
 
 @SuppressWarnings("unused")
 public class CommandResponse {

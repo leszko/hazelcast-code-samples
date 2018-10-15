@@ -1,6 +1,5 @@
-package com.hazelcast.aws.ecs;
+package com.hazelcast.kubernetes;
 
-import com.hazelcast.aws.AwsDiscoveryStrategyFactory;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.DiscoveryStrategyConfig;
 import com.hazelcast.config.JoinConfig;
@@ -20,17 +19,13 @@ public class Application {
     public Config hazelcastConfig() {
         Config config = new Config();
         config.getProperties().setProperty("hazelcast.discovery.enabled", "true");
-        config.getNetworkConfig().getInterfaces().setEnabled(true).addInterface("10.0.*.*");
         JoinConfig joinConfig = config.getNetworkConfig().getJoin();
         joinConfig.getMulticastConfig().setEnabled(false);
 
-        AwsDiscoveryStrategyFactory awsDiscoveryStrategyFactory = new AwsDiscoveryStrategyFactory();
+        HazelcastKubernetesDiscoveryStrategyFactory discoveryStrategyFactory = new HazelcastKubernetesDiscoveryStrategyFactory();
         Map<String, Comparable> properties = new HashMap<>();
-        properties.put("region", "eu-central-1");
-        properties.put("tag-key", "aws:cloudformation:stack-name");
-        properties.put("tag-value", "EC2ContainerService-test-cluster");
         joinConfig.getDiscoveryConfig()
-                  .addDiscoveryStrategyConfig(new DiscoveryStrategyConfig(awsDiscoveryStrategyFactory, properties));
+                  .addDiscoveryStrategyConfig(new DiscoveryStrategyConfig(discoveryStrategyFactory, properties));
 
         return config;
     }

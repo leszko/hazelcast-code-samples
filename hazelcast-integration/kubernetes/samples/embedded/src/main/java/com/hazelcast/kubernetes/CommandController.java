@@ -1,4 +1,4 @@
-package com.hazelcast.aws.ecs;
+package com.hazelcast.kubernetes;
 
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.IMap;
