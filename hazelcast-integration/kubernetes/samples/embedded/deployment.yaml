@@ -1,23 +1,55 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hazelcast-embedded
+  name: hazelcast-embedded-1
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: hazelcast-embedded
+      app: hazelcast-embedded-1
   template:
     metadata:
       labels:
-        app: hazelcast-embedded
+        app: hazelcast-embedded-1
     spec:
       containers:
         - name: hazelcast-embedded
           image: leszko/hazelcast-kubernetes-embedded-sample
           imagePullPolicy: Always
+          env:
+          - name: KUBERNETES_SERVICE_NAME
+            value: hazelcast-separate-1
           ports:
           - containerPort: 5701
+          - containerPort: 5702
+          - containerPort: 8080
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hazelcast-embedded-2
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hazelcast-embedded-2
+  template:
+    metadata:
+      labels:
+        app: hazelcast-embedded-2
+    spec:
+      containers:
+        - name: hazelcast-embedded
+          image: leszko/hazelcast-kubernetes-embedded-sample
+          imagePullPolicy: Always
+          env:
+          - name: KUBERNETES_SERVICE_NAME
+            value: hazelcast-separate-2
+          ports:
+          - containerPort: 5701
+          - containerPort: 5702
           - containerPort: 8080
 
 ---
@@ -25,13 +57,81 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: hazelcast-embedded
+  name: app-1
 spec:
   type: LoadBalancer
   selector:
-    app: hazelcast-embedded
+    app: hazelcast-embedded-1
   ports:
-  - name: hazelcast
-    port: 5701
   - name: app
     port: 8080
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: hazelcast-shared-1
+spec:
+  type: ClusterIP
+  selector:
+    app: hazelcast-embedded-1
+  ports:
+  - name: hazelcast-shared
+    port: 5701
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: hazelcast-separate-1
+spec:
+  type: ClusterIP
+  selector:
+    app: hazelcast-embedded-1
+  ports:
+  - name: hazelcast-separate
+    port: 5702
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-2
+spec:
+  type: LoadBalancer
+  selector:
+    app: hazelcast-embedded-2
+  ports:
+  - name: app
+    port: 8080
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: hazelcast-shared-2
+spec:
+  type: ClusterIP
+  selector:
+    app: hazelcast-embedded-2
+  ports:
+  - name: hazelcast-shared
+    port: 5701
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: hazelcast-separate-2
+spec:
+  type: ClusterIP
+  selector:
+    app: hazelcast-embedded-2
+  ports:
+  - name: hazelcast-separate
+    port: 5702

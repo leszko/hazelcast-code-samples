@@ -9,6 +9,10 @@ public class CommandResponse {
         this.response = response;
     }
 
+    public CommandResponse(String responseShared, String responseSeparate) {
+        this.response = responseShared + "#" + responseSeparate;
+    }
+
     public String getResponse() {
         return response;
     }
