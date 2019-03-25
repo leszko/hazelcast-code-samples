@@ -1,0 +1,16 @@
+# https://istio.io/docs/reference/config/istio.networking.v1alpha3/#ServiceEntry
+apiVersion: networking.istio.io/v1alpha3
+kind: ServiceEntry
+metadata:
+  name: pod2pod-hazel
+spec:
+  hosts:
+    - hazel # not used
+  addresses:
+    - 10.12.0.0/14 # cluster ip cidr
+  ports:
+    - number: 5701
+      name: hzport
+      protocol: TCP
+  location: MESH_INTERNAL
+  resolution: NONE

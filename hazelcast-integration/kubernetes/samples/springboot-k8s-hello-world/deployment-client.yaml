@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pod-hazelcast-client
+spec:
+  # 1 or 2 client pods
+  # replicas: 1
+  replicas: 2
+  serviceName: service-hazelcast-server
+  selector:
+    matchLabels:
+      app: pod-hazelcast-client
+  template:
+    metadata:
+      labels:
+        app: pod-hazelcast-client
+    spec:
+      # Evil hack, wait for server up rather than test URL in a loop
+      initContainers:
+        - name: wait-for-pod-hazelcast-server
+          image: busybox
+          command: ['sh', '-c', 'sleep 120']
+      containers:
+        - env:
+          # Are we in Kubernetes
+          - name: K8S
+            value: "true"
+          image: "leszko/springboot-k8s-hello-world-the-client"
+          # Always from local, never from Dockerhub
+          imagePullPolicy: Always
+          # Url to check every 10 seconds if the container is ok
+          livenessProbe:
+            httpGet:
+              path: /k8s
+              port: 8080
+          name: container-hazelcast-client
+          # Url to check the container is up
+          readinessProbe:
+            httpGet:
+              path: /k8s
+              port: 8080
+            initialDelaySeconds: 30
+---
+# =========================================================
+# 6th action == HTTP to Hazelcast Clients
+# =========================================================
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-hazelcast-client
+spec:
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: pod-hazelcast-client
+  type: LoadBalancer
+---
